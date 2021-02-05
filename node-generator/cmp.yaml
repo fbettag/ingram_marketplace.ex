@@ -1,0 +1,1753 @@
+openapi: 3.0.1
+info:
+  title: Marketplace API
+  version: "1.1"
+  description: |
+    OpenAPI specification: <a href="../_specs/cmp.yaml" download><b>download</b></a>
+
+    <div class="admonition note">
+        <p class="admonition-title">Note</p>
+        <p> <strong>On Dec 3rd, 2020 Ingram Micro has updated Marketplace API on
+            production</strong>, which has changed the way the API behaves in some cases.
+            It is imperative that you read the
+            <a href="https://apidocs.cloud.im/1.2/notes/" target="_blank">
+                Marketplace API 1.2 release notes
+            </a>
+            carefully, modify your integrations (API clients) to match the updated specifications, and
+            prepare to update your API clients at the time when
+            the new version is implemented by Ingram Micro.
+        </p><p>
+            The documentation for the new version can be found under
+            <a href="//apidocs.cloud.im/1.2/" target="_blank">https://apidocs.cloud.im/1.2/</a>.
+            After Dec 3rd, this documentation portal will automatically display this new version.
+        </p>
+    </div>
+
+    This API is exposed by a gateway to the Ingram Micro Cloud platform's original
+    API. Its purpose is to make it easy and quick for resellers to onboard and
+    integrate with the platform using the
+    [REST](https://en.wikipedia.org/wiki/Representational_state_transfer)
+    interface. In addition to this API specification, use the following resources:
+
+    - [Sales scenarios](../examples/) for examples on selling common services.
+    - [Procedure guide](../howto/) for step-by-step instructions on the typical sales workflow.
+    - [Glossary](../glossary/) for definitions of terms.
+
+servers:
+  - url: 'https://server.example.com/api/'
+tags:
+  - name: "User Authentication"
+    description: Enable users to get a bearer token to authenticate other API calls.
+  - name: Customer Management
+    description: 'Create, retrieve, and manage customers.'
+  - name: Product Catalog
+    description: Retrieve products from the catalog.
+  - name: Order Management
+    description: 'Create, retrieve, and manage customer orders.'
+  - name: Subscription Management
+    description: Retrieve and manage customer subscriptions.
+  - name: Validation Management
+    description:  Enable resellers to validate product activation parameters before placing an order.
+  - name: Report Management
+    description: Retrieve URLs of exported data rated reports for a specified period.
+security:
+  - BearerAuth: []
+  - BasicAuth: []
+# NOTE: The API should support OAuth-1.0a as well, but the openapi specification has no support for this. As such, it is documented separately.
+paths:
+  /token:
+    post:
+      summary: "Generate a token"
+      description: "Generate an authentication token to be used in all other requests."
+      tags:
+        - "User Authentication"
+      operationId: generateAuthToken
+      security:
+        - BasicAuth: []
+      parameters:
+        - $ref: "#/components/parameters/apiSubscriptionParam"
+      responses:
+        "200":
+          description: "The operation is completed successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/authTokenDetails"
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/correlationId"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /customers:
+    get:
+      summary: Get a list of customers
+      description: "Get a list of customers and their basic details."
+      tags:
+        - Customer Management
+      operationId: getCustomers
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/nameParam'
+        - $ref: '#/components/parameters/emailParam'
+        - $ref: '#/components/parameters/externalIdParam'
+        - $ref: "#/components/parameters/apiSubscriptionParam"
+        - $ref: "#/components/parameters/offsetParam"
+        - $ref: "#/components/parameters/limitParam"
+      responses:
+        "200":
+          description: "The operation is completed successfully."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/customer"
+                  pagination:
+                    $ref: "#/components/schemas/pagination"
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/correlationId"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    post:
+      summary: Create a new customer
+      description: "Create a customer in the platform and associate it with the reseller that sends this request."
+      tags:
+        - Customer Management
+      operationId: createCustomer
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/apiSubscriptionParam"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/postCustomerDetails"
+        required: true
+      responses:
+        "200":
+          description: "Created"
+          links:
+            getCustomerById:
+              operationId: getCustomerById
+              parameters:
+                id: '$response.body#/data/id'
+              description: "The **id** returned in the response can be used as the **id** parameter in **GET /customers/{id}**."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/getCustomerDetails"
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/correlationId"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /customers/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: The ID of the customer to be processed by the request.
+        required: true
+        schema:
+          type: string
+          example: "1000027"
+    get:
+      summary: Get full details of a specific customer
+      description: "Get extended details about a specific customer in the platform."
+      tags:
+        - Customer Management
+      operationId: getCustomerById
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/apiSubscriptionParam"
+      responses:
+        "200":
+          description: "The operation is completed successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/getCustomerDetails"
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/correlationId"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /products:
+    get:
+      summary: Get a list of products from the product catalog
+      description: "Get a list of products available for the requester to sell or resell with
+        details included."
+      tags:
+        - Product Catalog
+      operationId: getCatalog
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/apiSubscriptionParam"
+        - $ref: '#/components/parameters/offsetParam'
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/mpn'
+      responses:
+        "200":
+          description: "The operation is completed successfully."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/product"
+                  pagination:
+                    $ref: "#/components/schemas/pagination"
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/correlationId"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /validation/parameters:
+    post:
+      tags:
+        - Validation Management
+      summary: Validate product activation parameters
+      description: "Validate activation parameters for a set of products."
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/validationParameters"
+        required: true
+      responses:
+        "200":
+          description: "The operation is completed successfully."
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/validationParametersResult"
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/correlationId"
+  /orders:
+    get:
+      summary: Get a list of orders
+      description: "Get basic details of orders in the platform."
+      tags:
+        - Order Management
+      operationId: getOrders
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/apiSubscriptionParam"
+        - $ref: '#/components/parameters/offsetParam'
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/orderCustomerParam'
+        - $ref: '#/components/parameters/orderStatusParam'
+        - $ref: '#/components/parameters/orderSubscriptionParam'
+        - $ref: '#/components/parameters/orderCreationTimeFrom'
+        - $ref: '#/components/parameters/orderCreationTimeTo'
+      responses:
+        '200':
+          description: "The operation is completed successfully."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/order'
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/correlationId"
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      summary: Create a new order
+      description: |
+        Place an order for a set of products for a specific customer.
+      tags:
+        - Order Management
+      operationId: createOrder
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/apiSubscriptionParam"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/orderDetails"
+        required: true
+      responses:
+        "200":
+          description: "The operation is completed successfully."
+          links:
+            getOrderById:
+              operationId: getOrderDetails
+              parameters:
+                id: '$response.body#/data/id'
+              description: "The **id** returned in the response can be used as the **id**
+                parameter in **GET /orders/{id}**."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/order"
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/correlationId"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /orders/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: This is the ID of the order that must be processed by the request.
+        required: true
+        schema:
+          type: string
+          example: "1000042"
+    get:
+      summary: Get full details of a specific order
+      description: "Get extended details of a specific order."
+      tags:
+        - Order Management
+      operationId: getOrderDetails
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/apiSubscriptionParam"
+      responses:
+        "200":
+          description: "The operation is completed successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/orderDetailsWithPrices"
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/correlationId"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /orders/estimate:
+    post:
+      summary: Estimate an order price
+      description: |
+        Get estimated prices of an order.
+      tags:
+        - Order Management
+      operationId: estimateOrder
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/apiSubscriptionParam"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/orderEstimationRequest"
+        required: true
+      responses:
+        "200":
+          description: "The operation is completed successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/orderEstimationDetails"
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/correlationId"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /subscriptions:
+    get:
+      summary: Retrieve a list of subscriptions
+      description: "Get a list of subscriptions belonging to the customers of the reseller that sends the request."
+      tags:
+        - Subscription Management
+      operationId: getSubscriptions
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/apiSubscriptionParam"
+        - $ref: '#/components/parameters/subscriptionCustomerParam'
+        - $ref: '#/components/parameters/subscriptionStatusParam'
+        - $ref: '#/components/parameters/subscriptionCreationDateFromParam'
+        - $ref: '#/components/parameters/subscriptionCreationDateToParam'
+        - $ref: '#/components/parameters/offsetParam'
+        - $ref: '#/components/parameters/limitParam'
+      responses:
+        "200":
+          description: "The operation is completed successfully."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/subscription"
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/correlationId"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /subscriptions/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: This is the ID of the subscription that must be processed by the request.
+        required: true
+        schema:
+          type: string
+          example: "1000017"
+    get:
+      summary: Get full details of a specific subscription
+      description: "Get extended details of a specific subscription from the platform."
+      tags:
+        - Subscription Management
+      operationId: getSubscription
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/apiSubscriptionParam"
+      responses:
+        "200":
+          description: "The operation is completed successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/subscriptionDetails"
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/correlationId"
+  /reports:
+    get:
+      summary: Retrieve a list of exported reports
+      description: "Get a list of the reseller's rated data reports exported during the specified period."
+      tags:
+        - Report Management
+      operationId: getReports
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/apiSubscriptionParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+        - $ref: '#/components/parameters/reportsNameParam'
+        - $ref: '#/components/parameters/reportsFormatParam'
+        - $ref: '#/components/parameters/reportsStatusParam'
+        - $ref: '#/components/parameters/reportsTypeParam'
+        - $ref: '#/components/parameters/reportsFromParam'
+        - $ref: '#/components/parameters/reportsToParam'
+      responses:
+        "200":
+          description: "The operation is completed successfully."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/reportItem"
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/correlationId"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /reports/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: The ID of the report to be processed by the request.
+        required: true
+        schema:
+          type: string
+          example: "f40c942d-ebec-41b9-b604-5ed9ffb6d4f2"
+    get:
+      summary: Get full details of a report
+      description: "Get extended details about a report in the platform."
+      tags:
+        - Report Management
+      operationId: getReportById
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/apiSubscriptionParam"
+      responses:
+        "200":
+          description: "The operation is completed successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/reportItem"
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/correlationId"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+components:
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+      description: "Basic authentication is a simple authentication scheme built into the
+        HTTP protocol. The client sends HTTP requests with the `Authorization`
+        header that contains the word Basic followed by a space and a
+        base64-encoded string username:password."
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: "Bearer authentication (also called token authentication) is an HTTP
+        authentication scheme that involves security tokens called bearer
+        tokens. The name “Bearer authentication” can be understood as “give
+        access to the bearer of this token.” The bearer token is a cryptic
+        string, usually generated by the server in response to a login request.
+        The client must send this token in the `Authorization` header when
+        making requests to protected resources."
+  schemas:
+    address:
+      type: object
+      required:
+        - streetAddress
+        - postalCode
+        - city
+        - state
+        - countryCode
+      description: "The postal address data of a customer
+        used in invoices and displayed when the customer logs in to the user panels. As for
+        cloud services, this information may be required to create a service."
+      properties:
+        streetAddress:
+          type: string
+          description: "The street address."
+          example: 555 Main Street
+        addressExtension:
+          type: string
+          description: "Secondary information in the address such as apartment or suite number."
+          example: Suite 100
+        postalCode:
+          type: string
+          description: "The postal code for the specified street address."
+          example: "92612"
+        city:
+          type: string
+          description: "The city of the postal address."
+          example: "Irvine"
+        state:
+          type: string
+          description: "The state (if applicable) of the city (mandatory for certain countries)."
+          example: CA
+        countryCode:
+          type: string
+          description: "The two uppercase character country code (Alpha-2 code) as specified by [iso.3166-1](https://www.iso.org/obp/ui#search/code)."
+          example: "US"
+    authTokenDetails:
+      type: object
+      description: "After the authentication requester is recognized, the platform returns a
+        JWT signed and encrypted token. This token must be used for the bearer
+        authentication in all other API calls."
+      required:
+        - token
+        - expiresInSeconds
+      properties:
+        token:
+          type: string
+          readOnly: true
+          description: "This is a JWT signed token."
+          example: "eyJwcmluY2lwYWwiOiJwaGlsaXAucG9sbGljaDM3NzVAUE9BTU4tZDIyOWNkY2EyMWZlLmFxYS5pbnQuem9uZSIsImJ3SWQiOiJuOGtvZXluczNrYTZyOSIsImpTZXNzaW9uQ29va2llIjoiSlNFU1NJT05JRD1hbXhyMW9BTXdFdy0yeXhWd1N4R0d3TlMxX3NBOTNhSDd1U1pFNXhBLjEwLjMxLjI0LjE5NzsgcGF0aD0vOyBIdHRwT25seTsgU2VjdXJlIiwiYWxnIjoiSFMzODQifQ"
+        expiresInSeconds:
+          type: integer
+          format: int64
+          readOnly: true
+          description: "The period of time the token will be valid for, in seconds."
+          example: 1500
+    getContactPerson:
+      type: object
+      description: "Contact information about a physical person. This
+        can be used in notifications and displayed when the person logs in to the
+        user panels. When providing a service for a user, the respective cloud
+        application may require this data."
+      required:
+        - type
+        - firstName
+        - lastName
+        - email
+        - phoneNumber
+      properties:
+        type:
+          type: string
+          description: "This defines the contact type."
+          enum:
+            - admin
+            - billing
+            - technical
+          default: admin
+        firstName:
+          type: string
+          description: "This is the first name of the contact."
+          example: "Jane"
+        lastName:
+          type: string
+          description: "This is the last name of the contact."
+          example: "Doe"
+        email:
+          type: string
+          format: email
+          description: "This is the email address of the contact."
+          example: "jane.doe@email.com"
+        phoneNumber:
+          type: string
+          description: "This is the phone number of the contact in ITU-T E.164 notation. Extension numbers may be added by adding a '#' at the end."
+          example: "81##18881234567#"
+    postContactPerson:
+      type: object
+      description: "Contact information about a physical person. This
+            can be used in notifications and displayed when the person logs in to the
+            user panels. When providing a service for a user, the respective cloud
+            application may require this data."
+      required:
+        - type
+        - firstName
+        - lastName
+        - email
+        - phoneNumber
+      properties:
+        type:
+          type: string
+          description: "This defines the contact type."
+          enum:
+            - admin
+            - billing
+            - technical
+          default: admin
+        firstName:
+          type: string
+          description: "This is the first name of the contact."
+          example: "Jane"
+        lastName:
+          type: string
+          description: "This is the last name of the contact."
+          example: "Doe"
+        email:
+          type: string
+          format: email
+          description: "This is the email address of the contact."
+          example: "jane.doe@email.com"
+        phoneNumber:
+          type: string
+          description: "This is the phone number of the contact in ITU-T E.164 notation. Extension numbers may be added by adding a '#' at the end."
+          example: "81##18881234567#"
+        login:
+          type: string
+          description: "This is an optional parameter (only for the contactPerson of type ``admin``) used when you must
+                have a certain login name for a customer administrator
+                instead of an automatically generated one. The string must be compliant with the platform requirements.
+                Typically, ``login`` must be not less than 5 characters and comply with the following regular expression:
+                '^[A-Za-z0-9][A-Za-z0-9_.@-]{0,255}$'. It can also be an email address."
+          example: "someadmin@example.com"
+        password:
+          type: string
+          description: "This is a password assigned to the administrator login.
+                The password strength must comply with the quality level requirements in the platform. Typically, it must be
+                at least 7-character length, including letters in upper and lower cases, digits, and special characters."
+          example: "Ecx$cvdazv"
+    customer:
+      type: object
+      description: "A customer representation that contains the basic information about the customer
+        such as the identifier, name, type, status, and billing mode."
+      required:
+        - id
+        - name
+        - status
+        - externalId
+      properties:
+        id:
+          type: string
+          readOnly: true
+          description: The unique ID (in UUID format) of the customer.
+          example: 1000027
+        externalId:
+          type: string
+          description: "The ID of the customer in an external system that is integrated with the platform."
+          example: EXTERNAL-A1S2D3
+        name:
+          type: string
+          description: "The name of the business entity (when a customer represents
+            a company) or the full name of an individual (when a customer
+            represents a person)."
+          example: Acme Inc.
+        status:
+          type: string
+          readOnly: true
+          description: |
+            The status of the customer in the platform:
+
+            * pending: The customer is added to the platform but is not verified yet.
+
+            * active: The customer is active in the platform and able to order
+            products and services.
+
+            * creditHold: The customer is active in the platform, but not able
+            to order additional products and services.  This is due to the customer's
+            unpaid outstanding balance for the consumed products and services.
+
+            * adminHold: The customer is not active in the platform and unable to
+            order additional products and services. All customer's services are
+            suspended. This is due to violations of terms of service or
+            acceptable use policies.
+
+            * cancelled: The customer is not active in the platform, does not have access
+            to the user panel, cannot purchase services, and all its services are stopped.
+          enum:
+            - pending
+            - active
+            - creditHold
+            - adminHold
+            - cancelled
+          default: "active"
+        address:
+          $ref: "#/components/schemas/address"
+        contactPersons:
+          type: array
+          items:
+            $ref: "#/components/schemas/getContactPerson"
+        language:
+          type: string
+          description: |
+            The language for the customer's notifications and the default
+            language for the user panel login:
+
+            * en_US - US English
+            * de_DE - German
+            * es_ES - Spanish
+            * fr_FR - French
+            * it_IT - Italian
+            * ja_JP - Japanese
+            * ar_AE - Arabic
+            * nl_NL - Dutch
+            * pt_BR - Portuguese (Brazil)
+          enum:
+            - en_US
+            - de_DE
+            - es_ES
+            - fr_FR
+            - it_IT
+            - ja_JP
+            - ar_AE
+            - nl_NL
+            - pt_BR
+          default: "en_US"
+    getCustomerDetails:
+      type: object
+      description: "The extended representation of a specific customer with additional arrays of
+        addresses and contacts, and the preferred language of the customer."
+      required:
+        - contactPersons
+        - address
+      allOf:
+        - $ref: "#/components/schemas/customer"
+      properties:
+        taxRegId:
+          type: string
+          description: "The tax registration ID that is used by the platform
+            in tax calculation and determining tax exemption."
+          example: 00-0000000
+    postCustomerDetails:
+      type: object
+      description: "The extended representation of a specific customer with additional arrays of
+            addresses and contacts, and the preferred language of the customer."
+      allOf:
+        - $ref: "#/components/schemas/customer"
+      properties:
+        taxRegId:
+          type: string
+          description: "The tax registration ID that is used by the platform
+                in tax calculation and determining tax exemption."
+          example: 00-0000000
+        contactPersons:
+          type: array
+          items:
+            $ref: "#/components/schemas/postContactPerson"
+    productPrice:
+      type: object
+      description: "A structure representing the product price."
+      required:
+        - amount
+        - currency
+      properties:
+        amount:
+          type: string
+          description: "Amount of money."
+          example: "7.50"
+        currency:
+          type: string
+          description: "The currency code to be used for charging the customer."
+          example: "USD"
+        type:
+          type: string
+          description: "The type of price."
+          enum:
+            - recurring
+            - setup
+            - overuse
+    orderItemPrice:
+      type: object
+      description: "A structure representing the ordered item (one or more products) price."
+      required:
+        - amount
+        - currency
+      properties:
+        amount:
+          type: string
+          description: "The item price (product quantity * product price)."
+          example: "70.50"
+        currency:
+          type: string
+          description: "The currency code to be used for charges."
+          example: "USD"
+    totalOrderPriceEstimation:
+      type: object
+      description: "A structure representing the order total price estimation."
+      required:
+        - amount
+        - currency
+      properties:
+        amount:
+          type: string
+          description: "Amount of order."
+          example: "70.50"
+        currency:
+          type: string
+          description: "The currency code to be used for charges."
+          example: "USD"
+    mpn:
+      type: string
+      description: "Manufacturer Part Number."
+      example: "d903a2db-bf6f-4434-83f1-21ba44017813_ANNUAL"
+    product:
+      type: object
+      description: "The representation of a product for sale."
+      required:
+        - id
+        - name
+        - prices
+        - minimumQuantity
+        - maximumQuantity
+      properties:
+        mpn:
+          $ref: '#/components/schemas/mpn'
+        serviceName:
+          type: string
+          description: "The service name."
+          example: "O365_APS"
+        name:
+          type: string
+          description: "The product name."
+          example: "Office 365 Enterprise E1"
+        minimumQuantity:
+          type: string
+          description: "The minimum number of the product items that must be in a subscription."
+          example: "1"
+        maximumQuantity:
+          type: string
+          description: "The maximum quantity of the product items that can be in a subscription."
+          example: "1000"
+        prices:
+          type: array
+          items:
+            $ref: "#/components/schemas/productPrice"
+        billingPeriod:
+          type: object
+          properties:
+            type:
+              type: string
+              description: "The billing period duration type."
+              enum: [day, month, year]
+              example: "month"
+            duration:
+              type: integer
+              description: "The billing period duration."
+        dependsOn:
+          type: array
+          readOnly: true
+          description: "Other products that must be included in the subscription when ordering a product. If a product that other products depend on was not included in the order request, it will be added by the platform."
+          items:
+            $ref: "#/components/schemas/dependsOnItems"
+    order:
+      type: object
+      description: "The representation of a specific order that contains high level data of a request to purchase one or more product items. In the platform, the order is extended with an array of *orderLineItem* objects that contain detailed information about each ordered product."
+      required:
+        - id
+        - customerId
+        - creationDate
+        - status
+      properties:
+        id:
+          type: string
+          readOnly: true
+          description: "The ID assigned to the order in the platform."
+          example: "1000042"
+        type:
+          type: string
+          description: "The order type."
+          example: "sales"
+          default: "sales"
+          enum:
+            - sales
+            - change
+            - renewal
+            - cancellation
+        customerId:
+          type: string
+          description: "The ID of the customer for whom a specific order is placed."
+          example: "1000027"
+        creationDate:
+          type: string
+          format: date-time
+          readOnly: true
+          description: "The date and time when the order was created in the platform."
+          example: "2019-03-19 07:22:59"
+        status:
+          type: string
+          readOnly: true
+          description: |
+            Possible order status:
+
+            * submitted: The order is submitted and is waiting for processing.
+            * processing: The order is being fulfilled. This may take some time.
+            * error: The order processing failed. More information can be
+            found in the reseller control panel.
+            * completed: The order is completed.
+            * cancelled: The order is cancelled.
+          enum:
+            - submitted
+            - processing
+            - error
+            - completed
+            - cancelled
+          default: submitted
+          example: submitted
+    orderDetails:
+      type: object
+      description: "The extended representation of a specific order with additional information about the ordered items."
+      allOf:
+        - $ref: "#/components/schemas/order"
+      required:
+        - products
+      properties:
+        poNumber:
+          type: string
+          description: "The purchase order number provided by the customer."
+          example: "PO1234"
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/orderProduct"
+    orderDetailsWithPrices:
+      type: object
+      description: "The extended representation of a specific order with additional information about the ordered items."
+      allOf:
+        - $ref: "#/components/schemas/order"
+      required:
+        - products
+      properties:
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/orderProductWithPrice"
+    orderEstimationDetails:
+      type: object
+      description: "The representation of an order estimation."
+      required:
+        - total
+        - products
+      properties:
+        total:
+          $ref: "#/components/schemas/totalOrderPriceEstimation"
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/orderProductEstimation"
+    orderEstimationRequest:
+      type: object
+      description: "The representation of an order to be estimated."
+      required:
+        - type
+        - customerId
+        - products
+      properties:
+        type:
+          type: string
+          description: "The order type."
+          example: "change"
+          default: "sales"
+          enum:
+            - sales
+            - change
+            - renewal
+            - cancellation
+        customerId:
+          type: string
+          description: "The ID of the customer for whom a specific order is estimated."
+          example: "1000027"
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/orderProductToEstimation"
+    orderProduct:
+      type: object
+      description: ""
+      properties:
+        mpn:
+          $ref: '#/components/schemas/mpn'
+        name:
+          type: string
+          description: "The product name."
+          example: "Office 365 Enterprise E1"
+        quantity:
+          type: number
+          format: int32
+          description: "The number of ordered product items."
+          example: 10
+        subscriptionId:
+          type: string
+          readOnly: true
+          description: "The ID of a subscription created in the platform."
+          example: "1000017"
+        parameters:
+          type: array
+          description: "A list of product-specific activation parameters."
+          items:
+            $ref: "#/components/schemas/productParameter"
+    orderProductWithPrice:
+      type: object
+      description: ""
+      required:
+        - id
+        - quantity
+      properties:
+        mpn:
+          $ref: '#/components/schemas/mpn'
+        name:
+          type: string
+          description: "The product name."
+          example: "Office 365 Enterprise E1"
+        quantity:
+          type: number
+          format: int32
+          description: "The number of ordered product items."
+          example: 10
+        subscriptionId:
+          type: string
+          description: "The ID of a subscription created in the platform."
+          example: "1000017"
+        extendedPrice:
+          $ref: "#/components/schemas/orderItemPrice"
+    orderProductToEstimation:
+      type: object
+      description: ""
+      required:
+        - id
+        - quantity
+      properties:
+        mpn:
+          $ref: '#/components/schemas/mpn'
+        name:
+          type: string
+          description: "The product name."
+          example: "Office 365 Enterprise E1"
+        quantity:
+          type: number
+          format: int32
+          description: "The number of ordered product items."
+          example: 10
+        subscriptionId:
+          type: string
+          description: "The ID of a subscription for which a Change, Renewal, or Cancellation order is estimated."
+          example: "1000017"
+    orderProductEstimation:
+      type: object
+      description: ""
+      required:
+        - id
+        - quantity
+      properties:
+        mpn:
+          $ref: '#/components/schemas/mpn'
+        quantity:
+          type: number
+          format: int32
+          description: "The number of product items."
+          example: 10
+        extendedPrice:
+          $ref: "#/components/schemas/orderItemPrice"
+    validationParameters:
+      type: object
+      required:
+        - customerId
+        - products
+      description: "List of product-specific activation parameters."
+      properties:
+        customerId:
+          type: string
+          description: "The ID of the customer that will receive the product or services."
+          example: "1000027"
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/validationParametersItem"
+    validationParametersItem:
+      type: object
+      description: "The structure representing an individual product parameter."
+      properties:
+        mpn:
+          $ref: '#/components/schemas/mpn'
+        parameters:
+          type: array
+          items:
+            $ref: "#/components/schemas/validationParameter"
+    validationParameter:
+      type: object
+      description: "The structure representing an individual product parameter. It specifies the parameter name and its value that can be any of the following types: string, number, boolean, array, or object."
+      example: {"name":"domain", "value":"isv1.example"}
+      properties:
+        name:
+          type: string
+          readOnly: false
+          example: "domain"
+        value:
+          oneOf:
+            - type: string
+            - type: boolean
+            - type: number
+            - type: object
+            - type: array
+    pagination:
+      type: object
+      description: "The information about the returned results, including the current position of the returned range (offset), total number of items in the returned range (limit), and total number of items in the whole collection (total)."
+      required:
+        - limit
+        - offset
+        - total
+      properties:
+        offset:
+          type: number
+          description: "The starting position in the dataset that is retrieved from the requested dataset."
+          example: 20
+        limit:
+          type: number
+          description: "The number of records to display from the requested dataset."
+          example: 250
+        total:
+          type: number
+          description: "The total number of records found in the requested dataset."
+          example: 3423
+    errorMessage:
+      type: object
+      description: "The structure with additional information about the result of the API request."
+      required:
+        - timeStamp
+        - status
+        - message
+        - path
+        - correlationId
+      properties:
+        timeStamp:
+          type: string
+        status:
+          type: number
+        message:
+          type: string
+        path:
+          type: string
+        correlationId:
+          type: string
+          example: "a8n-313df136-3c2a-a5e4-854f-64d900a3a13f"
+    subscription:
+      type: object
+      required:
+        - id
+      description: "The representation of a subscription created when an order to a product is processed."
+      properties:
+        id:
+          type: string
+          readOnly: true
+          description: "The ID assigned to a subscription in the platform."
+          example: "1000017"
+        customerId:
+          type: string
+          readOnly: true
+          description: "The ID of the customer that owns the subscription."
+          example: "100027"
+        status:
+          type: string
+          readOnly: true
+          enum:
+            - active
+            - hold
+            - terminated
+            - removed
+          description: |
+            The subscription status can be one of the following:
+
+            * active: The subscription and its services are active.
+            * hold: The subscription is on hold and its services are disabled.
+            * terminated: The subscription is terminated and its services are disabled.
+            * removed: The scubscription is terminated and its services are deprovisioned.
+        renewalStatus:
+          type: boolean
+          readOnly: true
+          description: The status describes whether the subscription will renew automatically.
+          example: true
+        creationDate:
+          type: string
+          format: date
+          readOnly: true
+          description: "The subscription creation date."
+          example: "2020-02-12"
+        renewalDate:
+          type: string
+          format: date
+          readOnly: true
+          description: "The date when the subscription auto-renewal will start."
+          example: "2020-06-12"
+        lastModifiedDate:
+          type: string
+          format: date
+          readOnly: true
+          description: "The date when the subscription was last modified."
+          example: "2020-02-14"
+    subscriptionDetails:
+      type: object
+      required:
+        - products
+      description: "The representation of a specific subscription created when an order for products is processed."
+      allOf:
+        - $ref: "#/components/schemas/subscription"
+      properties:
+        totalPrice:
+          type: object
+          description: "A structure representing the total price of the subscription that is being charged each billing interval."
+          required:
+            - amount
+            - currency
+          properties:
+            amount:
+              type: string
+              description: "The amount of money."
+              example: "198"
+            currency:
+              type: string
+              description: "The currency code to be used for charging the customer."
+              example: "USD"
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/subscriptionItem"
+    subscriptionItem:
+      type: object
+      required:
+        - id
+      description: "The structure representing an individual product item in the subscription. A subscription may
+        have one or more of these items."
+      properties:
+        mpn:
+          $ref: '#/components/schemas/mpn'
+        quantity:
+          type: number
+          description: "The limit on the number of the product items that the subscriber can consume."
+          example: 10.0
+        unitPrice:
+          type: object
+          description: "A structure representing the unit price of the product at which the product was ordered."
+          required:
+            - amount
+            - currency
+          properties:
+            amount:
+              type: string
+              description: "The amount of money."
+              example: "19.8"
+            currency:
+              type: string
+              description: "The currency code to be used for charging the customer."
+              example: "USD"
+        extendedPrice:
+          type: object
+          description: "A structure representing the total calculated price."
+          required:
+            - amount
+            - currency
+          properties:
+            amount:
+              type: string
+              description: "The amount of money."
+              example: "198"
+            currency:
+              type: string
+              description: "The currency code to be used for charging the customer."
+              example: "USD"
+    validationParametersResult:
+      type: object
+      description: "The result of validation of the product-specific activation parameters."
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/validationParameterItem"
+    validationParameterItem:
+      properties:
+        name:
+          type: string
+          description: "The name of a product activation parameter."
+          example: "domain"
+        result:
+          description: >
+            The parameter validation result status:
+              * `success`
+              * `error`
+          type: string
+          enum:
+            - success
+            - error
+          example: success
+        message:
+          type: string
+          description: "The parameter specific validation message."
+          example: "Domain available to purchase."
+    productParameter:
+      type: object
+      description: "The structure representing a product activation parameter."
+      example: {"name":"domain", "value":"example.com"}
+      properties:
+        name:
+          type: string
+          readOnly: false
+          description: "The name of a product parameter."
+          example: "domain"
+        value:
+          description: "The value of a product parameter, which type can be one of: string, number, boolean, object, or array."
+          example: "example.org"
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: object
+            - type: array
+    reportItem:
+      type: object
+      description: "A rated data report generated and exported during a specific period."
+      properties:
+        id:
+          type: string
+          readOnly: true
+          description: "The report id."
+          example: "f40c942d-ebec-41b9-b604-5ed9ffb6d4f2"
+        name:
+          type: string
+          readOnly: true
+          description: "The preconfigured report name as defined in the platform."
+          example: "Daily report"
+        status:
+          type: string
+          readOnly: true
+          description: "The report generation status."
+          enum:
+            - submitted
+            - processing
+            - completed
+            - error
+          example: "completed"
+        type:
+          type: string
+          readOnly: true
+          description: "The report generation type."
+          enum:
+            - periodic
+            - daily
+            - monthly
+            - onetime
+            - on_invoice
+          example: "onetime"
+        format:
+          type: string
+          readOnly: true
+          description: "The report file format."
+          enum:
+            - json
+            - xml
+            - csv
+            - xlsx
+          example: "json"
+        creationDate:
+          type: string
+          format: date-time
+          readOnly: true
+          description: "The report file creation date and time."
+          example: "2019-11-07T17:02:59+00:00"
+        startDate:
+          type: string
+          format: date-time
+          readOnly: true
+          description: "The report period start date and time."
+          example: "2019-11-07T17:02:59+00:00"
+        endDate:
+          type: string
+          format: date-time
+          readOnly: true
+          description: "The report period end date and time."
+          example: "2019-12-07T17:02:59+00:00"
+        downloadUrl:
+          type: string
+          readOnly: true
+          description: "The URL of a report file."
+          example: "https://report-storage1.blob.core.windows.net/rdecontainer/Customer1.e1c8dd2f-31aa-4dd4-9642-29d945ede12d.2019-11-21.14-02-20.551+0100.json?sig=4JbyvWJAUwwN7Rip5kNjInP6Qa6B1HGjPzSWdSkQl%2BBg%3D&api-version=2016-05-31&st=2019-11-21T12%3A52%3A20Z&se=2020-02-19T12%3A52%3A20Z&sv=2016-05-31&sp=rwd&sr=b"
+    dependsOnItems:
+      type: object
+      description: "A set of product identifiers"
+      properties:
+        mpn:
+          $ref: '#/components/schemas/mpn'
+  parameters:
+    apiSubscriptionParam:
+      in: header
+      name: X-Subscription-Key
+      description: "The ID of your reseller's subscription on the API gateway that defines restrictions on your API calls."
+      schema:
+        type: string
+        format: uuid
+      required: true
+      example: 166a6ba878d74805ae3fc7e54fd33b16
+    nameParam:
+      description: "Find customers that are similar to the provided name."
+      in: query
+      name: name
+      required: false
+      schema:
+        type: string
+      example: Krauses Factory
+    emailParam:
+      description: "Find customers that have a contact person with the provided email address."
+      in: query
+      name: email
+      required: false
+      schema:
+        type: string
+      example: skipper@rhyta.com
+    externalIdParam:
+      description: "Find customers that have an external ID assigned equal to the provided ID."
+      in: query
+      name: externalId
+      required: false
+      schema:
+        type: string
+      example: EXTERNAL-A1S2D3
+    offsetParam:
+      description: "The number of items to skip before starting to collect the result set."
+      in: query
+      name: offset
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      example: 100
+    limitParam:
+      description: "The number of items to return."
+      in: query
+      name: limit
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 10
+      example: 20
+    reportsNameParam:
+      description: "The name of the requested reports."
+      in: query
+      name: name
+      required: false
+      schema:
+        type: string
+      example: "Monthly report"
+    reportsFromParam:
+      description: "The first day of the requested period."
+      in: query
+      name: from
+      required: false
+      schema:
+        type: string
+        format: date
+    reportsToParam:
+      description: "The last day of the requested period."
+      in: query
+      name: to
+      required: false
+      schema:
+        type: string
+        format: date
+    reportsFormatParam:
+      description: >
+        The format filter of the requested reports. Available types:
+          * `json`
+          * `xml`
+          * `csv`
+          * `xlsx`
+      in: query
+      name: format
+      required: false
+      schema:
+        type: string
+        enum:
+          - json
+          - xml
+          - csv
+          - xlsx
+      example: json
+    reportsStatusParam:
+      description: >
+        The status filter of the requested reports. Available types:
+          * `submitted`
+          * `processing`
+          * `completed`
+          * `error`
+      in: query
+      name: status
+      required: false
+      schema:
+        type: string
+        enum:
+          - submitted
+          - processing
+          - completed
+          - error
+      example: completed
+    reportsTypeParam:
+      description: >
+        The type filter of the requested reports. Available types:
+          * `periodic`
+          * `daily`
+          * `monthly`
+          * `onetime`
+          * `on_invoice`
+      in: query
+      name: type
+      required: false
+      schema:
+        type: string
+        enum:
+          - periodic
+          - daily
+          - monthly
+          - onetime
+          - on_invoice
+      example: periodic
+    subscriptionCustomerParam:
+      description: "The ID of the subscription owner."
+      in: query
+      name: customerId
+      required: false
+      schema:
+        type: string
+      example: 1000001
+    subscriptionCreationDateFromParam:
+      description: "Find subscriptions that were created after the specified date."
+      in: query
+      name: creationDateFrom
+      required: false
+      schema:
+        type: string
+        format: date
+      example: "2019-12-30"
+    subscriptionCreationDateToParam:
+      description: "Find subscriptions that were created before the specified date."
+      in: query
+      name: creationDateTo
+      required: false
+      schema:
+        type: string
+        format: date
+      example: "2019-12-31"
+    subscriptionStatusParam:
+      description: >
+        The Subscription status filter. Available statuses:
+          * `pending`
+          * `active`
+          * `hold`
+          * `terminated`
+          * `removed`
+      in: query
+      name: status
+      required: false
+      schema:
+        type: string
+        enum:
+          - pending
+          - active
+          - hold
+          - terminated
+          - removed
+      example: active
+    orderCustomerParam:
+      description: "The ID of the customer for whom the order was placed."
+      in: query
+      name: customerId
+      required: false
+      schema:
+        type: string
+      example: 1000001
+    orderSubscriptionParam:
+      description: "The ID of the subscription created from the order."
+      in: query
+      name: subscriptionId
+      required: false
+      schema:
+        type: string
+      example: 1000054
+    orderStatusParam:
+      description: >
+        The order status that can be one of the following:
+          * `submitted`
+          * `processing`
+          * `error`
+          * `completed`
+          * `cancelled`
+      in: query
+      name: status
+      required: false
+      schema:
+        type: string
+        enum:
+          - submitted
+          - processing
+          - error
+          - completed
+          - cancelled
+      example: processing
+    orderCreationTimeFrom:
+      description: "This is the beginning of a specific period of time used to search for orders created during that same period."
+      in: query
+      name: creationTimeFrom
+      required: false
+      schema:
+        type: string
+        format: date-time
+      example: "2019-12-11T17:32:28Z"
+    orderCreationTimeTo:
+      description: "This is the end of a specific period of time used to search for orders created during that same period."
+      in: query
+      name: creationTimeTo
+      required: false
+      schema:
+        type: string
+        format: date-time
+      example: "2019-12-11T17:32:28Z"
+    mpn:
+      description: "MPN value"
+      in: query
+      name: mpn
+      required: false
+      schema:
+        type: string
+      example: "d903a2db-bf6f-4434-83f1-21ba44017813_ANNUAL"
+  responses:
+    BadRequest:
+      description: "Bad Request"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/errorMessage"
+      headers:
+        X-Correlation-ID:
+          $ref: "#/components/headers/correlationId"
+    Forbidden:
+      description: "Access to the operation is forbidden."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/errorMessage"
+      headers:
+        X-Correlation-ID:
+          $ref: "#/components/headers/correlationId"
+    NotFound:
+      description: "The requested resource was not found."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/errorMessage"
+      headers:
+        X-Correlation-ID:
+          $ref: "#/components/headers/correlationId"
+    ServerError:
+      description: "An internal server error occurred."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/errorMessage"
+      headers:
+        X-Correlation-ID:
+          $ref: "#/components/headers/correlationId"
+    Unauthorized:
+      description: "Incorrect or missing authorization."
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/errorMessage'
+      headers:
+        X-Correlation-ID:
+          $ref: "#/components/headers/correlationId"
+  headers:
+    correlationId:
+      description: "This correlates an API request with internal processes in the platform. Please send its value to the support team when you file an issue with a request."
+      schema:
+        type: string
+      example: "a8n-313df136-3c2a-a5e4-854f-64d900a3a13f"
