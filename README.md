@@ -15,7 +15,7 @@ end
 Configure the library with the following lines in your `config.exs`:
 
 ```elixir
-config Ingram.Marketplace,
+config :ingram_marketplace,
   url: "https://api-lab.cloud.im/marketplace/dev",
   #url: "https://api.cloud.im/marketplace/eu" # prod
   subscription_key: "<your subscription key>",
