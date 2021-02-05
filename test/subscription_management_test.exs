@@ -1,7 +1,7 @@
 defmodule Multicloud.Ingram.SubscriptionManagementTest do
   use ExUnit.Case
-  alias Ingram.Marketplace.SubscriptionManagement
   alias Ingram.Marketplace.Model
+  alias Ingram.Marketplace.SubscriptionManagement
 
   test "Subscription Management" do
     assert {:ok, %{:data => data}} = SubscriptionManagement.get_subscriptions()

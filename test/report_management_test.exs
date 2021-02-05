@@ -1,7 +1,7 @@
 defmodule Multicloud.Ingram.ReportManagementTest do
   use ExUnit.Case
-  alias Ingram.Marketplace.ReportManagement
   alias Ingram.Marketplace.Model
+  alias Ingram.Marketplace.ReportManagement
 
   test "Report Management" do
     assert {:ok, %{:data => data}} = ReportManagement.get_reports()
