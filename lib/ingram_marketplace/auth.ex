@@ -58,17 +58,24 @@ defmodule Ingram.Marketplace.Auth do
       case Tesla.post!(client, "/token", "") do
         %Tesla.Env{
           status: 200,
-          body: %{token: bearer, expiresInSeconds: expires_in}
+          body: %{"token" => bearer, "expiresInSeconds" => expires_in}
         } ->
           %{token: bearer, expires_in: :os.system_time(:seconds) + expires_in}
 
         %Tesla.Env{status: status, body: body} ->
-          Logger.error(
-            "[Ingram.Marketplace.Auth] Error fetching token: status #{status}: #{body}"
-          )
+          # if we get a buggy Tesla/Poison version..
+          case Poison.decode(body) do
+            {:ok, %{"token" => bearer, "expiresInSeconds" => expires_in}} ->
+              %{token: bearer, expires_in: :os.system_time(:seconds) + expires_in}
 
-          :timer.sleep(:timer.seconds(10))
-          refresh_token(retry + 1)
+            body ->
+              Logger.error(
+                "[Ingram.Marketplace.Auth] Error fetching token: status #{status}: #{body}"
+              )
+
+              :timer.sleep(:timer.seconds(10))
+              refresh_token(retry + 1)
+          end
       end
     end
   end
