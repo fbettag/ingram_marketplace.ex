@@ -8,7 +8,7 @@ The package can be installed by adding `ingram_marketplace` to your list of depe
 
 ```elixir
 def deps do
-  [{:ingram_marketplace, "~> 1.2"}]
+  [{:ingram_marketplace, "~> 1.4"}]
 end
 ```
 
@@ -16,8 +16,9 @@ Configure the library with the following lines in your `config.exs`:
 
 ```elixir
 config :ingram_marketplace,
-  url: "https://api-lab.cloud.im/marketplace/dev",
   #url: "https://api.cloud.im/marketplace/eu" # prod
+  url: "https://api-lab.cloud.im/marketplace/dev",
+  marketplace: "us", # or "eu" or "stg" for staging/dev
   subscription_key: "<your subscription key>",
   username: "<your username>",
   password: "<your password>"
@@ -32,5 +33,5 @@ To install the required dependencies and to build the elixir project, run:
 ```
 npm --prefix node-generator install
 cd node-generator
-npx openapi-generator-cli generate  -c ../ingram-openapi.json  -g elixir -o Ingram.Marketplace -i https://apidocs.cloud.im/1.1/_specs/cmp.yaml --skip-validate-spec
+npx openapi-generator-cli generate  -c ../ingram-openapi.json  -g elixir -o Ingram.Marketplace -i https://apidocs.cloud.im/1.4/_specs/cmp.yaml --skip-validate-spec
 ```

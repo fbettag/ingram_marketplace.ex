@@ -8,7 +8,7 @@ defmodule Multicloud.Ingram.SubscriptionManagementTest do
 
     id = Enum.at(data, 0).id
 
-    assert {:ok, %Model.SubscriptionDetails{} = subscription} =
+    assert {:ok, %Model.SubscriptionDetails{} = _subscription} =
              SubscriptionManagement.get_subscription(id)
   end
 end

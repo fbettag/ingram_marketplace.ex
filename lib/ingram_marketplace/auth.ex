@@ -18,8 +18,7 @@ defmodule Ingram.Marketplace.Auth do
   """
   @spec token() :: String.t()
   def token do
-    token = Agent.get_and_update(__MODULE__, fn state -> get_token(state) end)
-    token
+    Agent.get_and_update(__MODULE__, fn state -> get_token(state) end)
   end
 
   defp refresh_token(retry \\ 0) do
@@ -29,6 +28,7 @@ defmodule Ingram.Marketplace.Auth do
       url = Application.get_env(:ingram_marketplace, :url)
       username = Application.get_env(:ingram_marketplace, :username)
       password = Application.get_env(:ingram_marketplace, :password)
+      marketplace = Application.get_env(:ingram_marketplace, :marketplace)
       subscription_key = Application.get_env(:ingram_marketplace, :subscription_key)
 
       middleware = [
@@ -36,7 +36,7 @@ defmodule Ingram.Marketplace.Auth do
         {Tesla.Middleware.BasicAuth, %{username: username, password: password}},
         {Tesla.Middleware.Timeout, timeout: 60_000},
         {
-          Tesla.Middleware.JSON,
+          Tesla.Middleware.DecodeJson,
           engine: Poison,
           engine_opts: [
             keys: :atoms
@@ -55,27 +55,37 @@ defmodule Ingram.Marketplace.Auth do
 
       client = Tesla.client(middleware, {Tesla.Adapter.Hackney, [timeout: 60_000]})
 
-      case Tesla.post!(client, "/token", "") do
+      case Tesla.post!(client, "/token", "{\"marketplace\": \"#{marketplace}\"}") do
         %Tesla.Env{
           status: 200,
-          body: %{"token" => bearer, "expiresInSeconds" => expires_in}
+          body: %{
+            "token" => bearer,
+            "expiresInSeconds" => expires_in
+          }
         } ->
           %{token: bearer, expires_in: :os.system_time(:seconds) + expires_in}
 
-        %Tesla.Env{status: status, body: body} ->
-          # if we get a buggy Tesla/Poison version..
-          case Poison.decode(body) do
+        %Tesla.Env{status: status, body: error} ->
+          case Poison.decode(error) do
             {:ok, %{"token" => bearer, "expiresInSeconds" => expires_in}} ->
               %{token: bearer, expires_in: :os.system_time(:seconds) + expires_in}
 
-            body ->
+            _ ->
               Logger.error(
-                "[Ingram.Marketplace.Auth] Error fetching token: status #{status}: #{body}"
+                "[Ingram.Marketplace.Auth] Error fetching token: status #{status}: #{
+                  inspect(error)
+                }"
               )
 
               :timer.sleep(:timer.seconds(10))
               refresh_token(retry + 1)
           end
+
+        {:error, error} ->
+          Logger.error("[Ingram.Marketplace.Auth] Error fetching token: #{inspect(error)}")
+
+          :timer.sleep(:timer.seconds(10))
+          refresh_token(retry + 1)
       end
     end
   end

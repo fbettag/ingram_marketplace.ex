@@ -24,7 +24,7 @@ defmodule Multicloud.Ingram.ValidationManagementTest do
       ]
     }
 
-    assert {:ok, %Model.ValidationParametersResult{} = data} =
+    assert {:ok, %Model.ValidationParametersResult{} = _data} =
              ValidationManagement.validation_parameters_post(params)
   end
 end

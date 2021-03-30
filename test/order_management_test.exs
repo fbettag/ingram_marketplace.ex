@@ -20,7 +20,7 @@ defmodule Multicloud.Ingram.OrderManagementTest do
       ]
     }
 
-    assert {:ok, %Model.OrderEstimationDetails{} = estimation} =
+    assert {:ok, %Model.OrderEstimationDetails{} = _estimation} =
              OrderManagement.estimate_order(estimate)
 
     order = %Model.OrderDetails{
@@ -43,7 +43,7 @@ defmodule Multicloud.Ingram.OrderManagementTest do
 
     assert {:ok, %Model.Order{} = ordered} = OrderManagement.create_order(order)
 
-    assert {:ok, %Model.OrderDetailsWithPrices{} = details} =
+    assert {:ok, %Model.OrderDetailsWithPrices{} = _details} =
              OrderManagement.get_order_details(ordered.id)
 
     assert {:ok, %{:data => orders}} =
