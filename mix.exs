@@ -6,7 +6,7 @@ defmodule IngramMarketplace.Mixfile do
   def project do
     [
       app: :ingram_marketplace,
-      version: "1.4.0",
+      version: "1.4.2",
       elixir: "~> 1.7",
       source_url: @project_url,
       homepage_url: @project_url,

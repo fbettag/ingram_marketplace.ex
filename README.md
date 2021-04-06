@@ -18,7 +18,7 @@ Configure the library with the following lines in your `config.exs`:
 config :ingram_marketplace,
   #url: "https://api.cloud.im/marketplace/eu" # prod
   url: "https://api-lab.cloud.im/marketplace/dev",
-  marketplace: "us", # or "eu" or "stg" for staging/dev
+  marketplace: "us", # or "de" or "stg" for staging/dev
   subscription_key: "<your subscription key>",
   username: "<your username>",
   password: "<your password>"

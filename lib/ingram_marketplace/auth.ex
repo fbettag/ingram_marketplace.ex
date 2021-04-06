@@ -59,11 +59,16 @@ defmodule Ingram.Marketplace.Auth do
         %Tesla.Env{
           status: 200,
           body: %{
-            "token" => bearer,
-            "expiresInSeconds" => expires_in
+            token: bearer,
+            expiresInSeconds: expires_in
           }
         } ->
           %{token: bearer, expires_in: :os.system_time(:seconds) + expires_in}
+        %Tesla.Env{status: 401} ->
+          Logger.error("[Ingram.Marketplace.Auth] Unauthenticated")
+
+          :timer.sleep(:timer.seconds(10))
+          refresh_token(retry + 1)
 
         %Tesla.Env{status: status, body: error} ->
           case Poison.decode(error) do
