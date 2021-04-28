@@ -15,7 +15,7 @@ defmodule Ingram.Marketplace.Auth do
   Starts the Auth-Agent.
   """
   @spec start_link(any()) :: {:ok, integer()}
-  def start_link(_args) do
+  def start_link(_args \\ nil) do
     Agent.start_link(fn -> refresh_token() end, name: __MODULE__)
   end
 

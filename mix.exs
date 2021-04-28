@@ -6,7 +6,7 @@ defmodule IngramMarketplace.Mixfile do
   def project do
     [
       app: :ingram_marketplace,
-      version: "1.4.3",
+      version: "1.4.4",
       elixir: "~> 1.7",
       source_url: @project_url,
       homepage_url: @project_url,
@@ -52,8 +52,7 @@ defmodule IngramMarketplace.Mixfile do
 
   def application do
     [
-      extra_applications: [:logger],
-      mod: {Ingram.Marketplace.Auth, []}
+      extra_applications: [:logger]
     ]
   end
 end

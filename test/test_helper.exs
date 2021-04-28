@@ -1,5 +1,7 @@
 ExUnit.start()
 
+{:ok, _} = Ingram.Marketplace.Auth.start_link()
+
 defmodule TestHelper do
   alias Ingram.Marketplace.Model
 
