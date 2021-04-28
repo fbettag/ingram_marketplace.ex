@@ -9,7 +9,13 @@ defmodule Ingram.Marketplace.Auth do
   Starts the Auth-Agent.
   """
   @spec start(any(), any()) :: {:ok, integer()}
-  def start(_type, _args) do
+  def start(args, _params), do: start_link(args)
+
+  @doc """
+  Starts the Auth-Agent.
+  """
+  @spec start_link(any()) :: {:ok, integer()}
+  def start_link(_args) do
     Agent.start_link(fn -> refresh_token() end, name: __MODULE__)
   end
 
@@ -64,6 +70,7 @@ defmodule Ingram.Marketplace.Auth do
           }
         } ->
           %{token: bearer, expires_in: :os.system_time(:seconds) + expires_in}
+
         %Tesla.Env{status: 401} ->
           Logger.error("[Ingram.Marketplace.Auth] Unauthenticated")
 
