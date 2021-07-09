@@ -22,6 +22,7 @@ defmodule Ingram.Marketplace.Connection do
 
     middleware = [
       {Tesla.Middleware.BaseUrl, url},
+      {Tesla.Middleware.Timeout, timeout: 120_000},
       {Tesla.Middleware.EncodeJson, engine: Poison},
       {
         Tesla.Middleware.Headers,
@@ -34,7 +35,7 @@ defmodule Ingram.Marketplace.Connection do
       }
     ]
 
-    Tesla.client(middleware, {Tesla.Adapter.Hackney, [timeout: 60_000]})
+    Tesla.client(middleware, {Tesla.Adapter.Hackney, [timeout: 120_000]})
   end
 
   @doc """
