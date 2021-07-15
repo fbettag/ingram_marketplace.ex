@@ -35,7 +35,7 @@ defmodule Ingram.Marketplace.Connection do
       }
     ]
 
-    Tesla.client(middleware, {Tesla.Adapter.Hackney, [timeout: 120_000]})
+    Tesla.client(middleware, {Tesla.Adapter.Hackney, [timeout: 120_000, recv_timeout: 120_000]})
   end
 
   @doc """

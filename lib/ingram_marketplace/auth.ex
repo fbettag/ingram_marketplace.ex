@@ -84,9 +84,7 @@ defmodule Ingram.Marketplace.Auth do
 
             _ ->
               Logger.error(
-                "[Ingram.Marketplace.Auth] Error fetching token: status #{status}: #{
-                  inspect(error)
-                }"
+                "[Ingram.Marketplace.Auth] Error fetching token: status #{status}: #{inspect(error)}"
               )
 
               :timer.sleep(:timer.seconds(10))
